@@ -36,17 +36,21 @@ ensure_modules() {
 }
 
 ensure_forwarding() {
-    if [ "$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0)" = "1" ]; then
-        log "IPv4 forwarding already enabled on host"
-        return
-    fi
-    if echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null; then
-        log "IPv4 forwarding enabled"
-    else
-        log "WARNING: could not enable IPv4 forwarding from inside the container."
-        log "  With network_mode: host, /proc/sys is typically read-only."
-        log "  Enable it on the host: sysctl -w net.ipv4.ip_forward=1"
-    fi
+    for proto in ipv4 ipv6; do
+        case "$proto" in
+            ipv4) path="/proc/sys/net/ipv4/ip_forward" ;;
+            ipv6) path="/proc/sys/net/ipv6/conf/all/forwarding" ;;
+        esac
+        if [ "$(cat "$path" 2>/dev/null || echo 0)" = "1" ]; then
+            log "$proto forwarding already enabled on host"
+            continue
+        fi
+        if echo 1 > "$path" 2>/dev/null; then
+            log "$proto forwarding enabled"
+        else
+            log "WARNING: could not enable $proto forwarding from inside the container."
+        fi
+    done
 }
 
 wait_for_iface() {
