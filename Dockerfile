@@ -18,7 +18,10 @@ LABEL org.opencontainers.image.title="tailscale-router" \
 
 # The official tailscale image is based on Alpine and already ships iptables and iproute2,
 # but we install kmod explicitly for modprobe.
-RUN apk add --no-cache iptables iproute2 kmod
+RUN apk add --no-cache iptables iproute2 kmod \
+    && rm -f /usr/sbin/iptables /usr/sbin/ip6tables \
+    && ln -s /usr/sbin/iptables-nft /usr/sbin/iptables \
+    && ln -s /usr/sbin/ip6tables-nft /usr/sbin/ip6tables
 
 COPY router-rules.sh /usr/local/bin/router-rules.sh
 COPY entrypoint-wrapper.sh /usr/local/bin/entrypoint-wrapper.sh

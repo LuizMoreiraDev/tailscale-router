@@ -105,8 +105,12 @@ log "Applying router iptables rules..."
 RULES_APPLIED=1
 log "Router ACTIVE  ✓   ($LAN_IF <-> $TS_IF, masquerading $LAN_SUBNET)"
 
-# Stay alive while tailscaled is alive; exit (and trigger cleanup) when it dies.
-wait "$TS_PID"
-EXIT_CODE=$?
-log "tailscaled exited with code $EXIT_CODE"
+# Stay alive while tailscale0 exists; exit (and trigger cleanup) when it disappears.
+# We don't wait on TS_PID because containerboot may exec or daemonize, making the
+# original PID disappear even though tailscaled is still running.
+log "Watchdog: monitoring $TS_IF presence..."
+while ip link show "$TS_IF" >/dev/null 2>&1; do
+    sleep 10
+done
+log "$TS_IF disappeared, shutting down"
 cleanup
